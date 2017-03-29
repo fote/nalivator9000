@@ -1,0 +1,31 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "Qo+juK1Ug/lFRwVvljKO/hDUQT4=",
+			"path": "github.com/Syfaro/telegram-bot-api",
+			"revision": "f5c6a478a0e3271a51649c64661ac90ed3d30bf1",
+			"revisionTime": "2017-01-27T17:40:09Z"
+		},
+		{
+			"checksumSHA1": "ZlMAbft1P8lvlCXZkmBFIDip1kk=",
+			"path": "github.com/julienschmidt/httprouter",
+			"revision": "fb79d6a91d3e4a9ecb6d945b218d78fc0d9b1939",
+			"revisionTime": "2016-07-11T18:09:06Z"
+		},
+		{
+			"checksumSHA1": "dw+Q0K2sjGCfpjZjptVFxBF6Qhg=",
+			"path": "github.com/nathan-osman/go-rpigpio",
+			"revision": "bce6190607da242de6cd7c566aceb73e32b0a25a",
+			"revisionTime": "2016-07-01T02:51:23Z"
+		},
+		{
+			"checksumSHA1": "t8jzPFIv4DNACv+cuZoigNmjPLQ=",
+			"path": "github.com/technoweenie/multipartstreamer",
+			"revision": "a90a01d73ae432e2611d178c18367fbaa13e0154",
+			"revisionTime": "2013-10-20T00:18:33Z"
+		}
+	],
+	"rootPath": "github.com/fote/nalivator9000"
+}
