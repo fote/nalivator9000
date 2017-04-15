@@ -12,6 +12,10 @@ import (
 	"os"
 	"strings"
 	"time"
+	"net/url"
+	"io/ioutil"
+	"os/exec"
+	"math/rand"
 )
 
 var Port string
@@ -21,6 +25,7 @@ var CurrentPumps Pumps
 var isReadyToDo bool
 var totalDuration int
 var BotToken string
+var SpeechKitToken string
 var htmlHeader = `<html><head><style>
 	* {font-family: Verdana}
 	a.button {font-size: 8em;color: #fff;text-decoration: none;user-select: none;background: rgb(76,175,80);padding: .7em 1.5em;outline: none;font-family: Verdana;}
@@ -37,6 +42,7 @@ type Pumps struct {
 type Pump struct {
 	Name     string
 	Pump_pin int
+	Led_pin  int
 	Duration int
 }
 
@@ -45,6 +51,7 @@ func init() {
 	flag.StringVar(&Address, "address", "0.0.0.0", "Listen address")
 	flag.StringVar(&ConfigFile, "config", "config.json", "Config file")
 	flag.StringVar(&BotToken, "bottoken", "", "Telegram bot token")
+	flag.StringVar(&SpeechKitToken, "speechkittoken","","Yandex SpeechKit token. Using Yandex SpeechKit Cloud - https://tech.yandex.ru/speechkit/cloud/")
 	flag.Parse()
 
 	file, err := os.Open(ConfigFile)
@@ -71,6 +78,8 @@ func init() {
 	log.Printf("Total duration: %v ms", totalDuration)
 
 	isReadyToDo = true
+
+
 
 }
 
@@ -109,13 +118,17 @@ func telegram_bot() {
 		switch update.Message.Command() {
 		case "start":
 			reply = "Привет!\nМеня зовут Гоша Наливатор.\nОтец создал меня чтобы наливать людям лучшие коктейли в городе. Пока что я умею только " + CurrentPumps.Cname + ".\n" +
-				"Просто скажи: \"Гоша, " + CurrentPumps.Cname + "\" , и я сделаю его для тебя"
+				"Просто напиши мне в телеграмчик: \"Гоша, " + CurrentPumps.Cname + "\" , и я сделаю его для тебя"
 		case "help":
-			reply = "Я - Гоша. Ты что, забыл? Просто скажи название коктейля который ты хочешь чтобы я сделал"
+			reply = "Я - Гоша. Ты что, забыл? Просто напиши название коктейля который ты хочешь чтобы я сделал"
 		}
 
 		if reply == "" && update.Message.Text != "" {
 			reply = "Ты че несешь? Давай накатим?"
+		}
+
+		if SpeechKitToken != "" {
+			go do_audio(reply)
 		}
 
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
@@ -132,34 +145,141 @@ func main() {
 		go telegram_bot()
 	}
 
+	if SpeechKitToken != "" {
+		log.Printf("SpeechKit token: %s", SpeechKitToken)
+	}
+
+	//startup leds blink
+	leds_on(CurrentPumps)
+	time.Sleep(time.Second * 2)
+	leds_off(CurrentPumps)
+
 	r.GET("/config", ConfigHandler)
 	r.GET("/do", DoCocktailHandler)
 	r.GET("/", HomeHandler)
 
+
 	log.Print(http.ListenAndServe(Address+":"+Port, r))
+}
+
+func do_audio(texttospeech string) {
+	log.Printf("Text to speech: %s", texttospeech)
+	audio_tmp := "/tmp/audio_tmp.wav"
+	hexurl := url.QueryEscape(texttospeech)
+
+	resp, err := http.Get("https://tts.voicetech.yandex.net/generate?key="+SpeechKitToken+"&format=wav&quality=hi&lang=ru-RU&speaker=ermil&speed=0.8&text=" + hexurl)
+	if err != nil {
+		log.Print("Something gone wrong with SpeechAPI")
+	}
+	defer resp.Body.Close()
+	log.Printf("Response from Yandex SpeechKit API: %s", resp.Status)
+	body, err := ioutil.ReadAll(resp.Body)
+
+	//calculating duration of wav file
+	log.Printf("Length of api response=%i",len(body))
+	wav_duration := ( ( len(body) / 88000 ) * 1000 ) - 500
+	log.Printf("Wav duration: %i ms", wav_duration)
+
+	//save speechapi result in file
+	err = ioutil.WriteFile(audio_tmp, body, 0644)
+
+	//start blinking led
+	go do_led(wav_duration)
+
+	//play speech file
+	out, err := exec.Command("sh","-c","aplay "+audio_tmp).Output()
+	log.Print(out)
+}
+
+func leds_on(P Pumps) {
+	log.Printf("LED - Leds on")
+	for _, v := range P.Pumps {
+		p, err := rpi.OpenPin(v.Led_pin, rpi.OUT)
+		if err != nil {
+			log.Printf("LED - Can't set LED pin to output")
+		}
+		p.Write(rpi.HIGH)
+	}
+}
+
+func leds_off (P Pumps) {
+	log.Printf("LED - Leds off")
+	for _, v := range CurrentPumps.Pumps {
+		p, err := rpi.OpenPin(v.Led_pin, rpi.OUT)
+		if err != nil {
+			log.Printf("LED - Can't set LED pin to output")
+		}
+		p.Write(rpi.LOW)
+
+	}
+}
+
+func do_led(duration int) {
+	inc := 0
+	i := 0
+	log.Printf("==== LED - Doing led, duration: %i ms ====", duration)
+	for i < duration {
+
+		//leds on
+		leds_on(CurrentPumps)
+
+		//sleep rand ms
+		inc = rand.Intn(600)
+		log.Printf("LED - Sleep: %i ms", inc)
+		time.Sleep(time.Millisecond * time.Duration(inc))
+
+		i = i + inc
+
+		//leds off
+		leds_off(CurrentPumps)
+
+		//sleep rand ms
+		inc = rand.Intn(300)
+		log.Printf("LED - Sleep: %i ms", inc)
+		time.Sleep(time.Millisecond * time.Duration(inc))
+
+		i = i + inc
+
+	}
+
+	log.Printf("==== LED - Done ====")
 }
 
 func do_cocktail() {
 	isReadyToDo = false
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 5)
 	log.Printf("==== Start coocking ====")
 	for _, v := range CurrentPumps.Pumps {
 		log.Printf("Nalivaem %s ;duration = %v; GPIO = %v", v.Name, v.Duration, v.Pump_pin)
-
+		//pump pin open
 		p, err := rpi.OpenPin(v.Pump_pin, rpi.OUT)
 		if err != nil {
 			panic(err)
 		}
 		defer p.Close()
 
+		//led pin open
+		l, l_err := rpi.OpenPin(v.Led_pin, rpi.OUT)
+		if l_err != nil {
+			log.Printf("LED - Can't set LED pin to output")
+		}
+		defer  l.Close()
+
 		// pump on
 		p.Write(rpi.HIGH)
+
+		//led on
+		l.Write(rpi.HIGH)
 
 		time.Sleep(time.Second * time.Duration(v.Duration))
 
 		// pump off
 		p.Write(rpi.LOW)
+
+		//led off
+		l.Write(rpi.LOW)
 	}
+	do_audio("Вот твой коктейль, мешок с мясом")
 
 	log.Printf("==== Done ====")
 	isReadyToDo = true

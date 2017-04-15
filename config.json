@@ -4,16 +4,19 @@
     {
       "name": "Tequila",
       "pump_pin": 17,
+      "led_pin": 23,
       "duration": 17
     },
     {
       "name": "Juice",
       "pump_pin": 22,
+      "led_pin": 25,
       "duration": 49
     },
     {
       "name": "Grenadine",
       "pump_pin": 27,
+      "led_pin": 24,
       "duration": 3
     }
   ]
