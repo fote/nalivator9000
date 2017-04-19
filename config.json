@@ -17,7 +17,7 @@
       "name": "Grenadine",
       "pump_pin": 27,
       "led_pin": 24,
-      "duration": 3
+      "duration": 7
     }
   ]
 }

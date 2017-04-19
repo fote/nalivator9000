@@ -88,7 +88,7 @@ func telegram_bot() {
 	bot, err := tgbotapi.NewBotAPI(BotToken)
 	if err != nil {
 		log.Printf("%v", err)
-		log.Printf("Can't register bot. Bot will not work")
+		log.Print("Can't register bot. Bot will not work")
 		return
 	}
 
@@ -121,6 +121,8 @@ func telegram_bot() {
 				"Просто напиши мне в телеграмчик: \"Гоша, " + CurrentPumps.Cname + "\" , и я сделаю его для тебя"
 		case "help":
 			reply = "Я - Гоша. Ты что, забыл? Просто напиши название коктейля который ты хочешь чтобы я сделал"
+		case "joke":
+			reply = "Сто+ит бармен и протирает барную стойку. Подходит подвыпивший мужик. Смотрит и после недолгого размышления говорит бармену: - Ты в курсе что ты смахиваешь на г+омика? Бармен спокойно и вежливо отвечает:- Извините, мужчина, я буду смахивать в другую сторону. Ха. Ха. Ха. Ха."
 		}
 
 		if reply == "" && update.Message.Text != "" {
@@ -167,7 +169,7 @@ func do_audio(texttospeech string) {
 	audio_tmp := "/tmp/audio_tmp.wav"
 	hexurl := url.QueryEscape(texttospeech)
 
-	resp, err := http.Get("https://tts.voicetech.yandex.net/generate?key="+SpeechKitToken+"&format=wav&quality=hi&lang=ru-RU&speaker=ermil&speed=0.8&text=" + hexurl)
+	resp, err := http.Get("https://tts.voicetech.yandex.net/generate?key="+SpeechKitToken+"&format=wav&quality=hi&lang=ru-RU&speaker=ermil&text=" + hexurl)
 	if err != nil {
 		log.Print("Something gone wrong with SpeechAPI")
 	}
@@ -176,9 +178,9 @@ func do_audio(texttospeech string) {
 	body, err := ioutil.ReadAll(resp.Body)
 
 	//calculating duration of wav file
-	log.Printf("Length of api response=%i",len(body))
+	log.Printf("Length of api response=%d",len(body))
 	wav_duration := ( ( len(body) / 88000 ) * 1000 ) - 500
-	log.Printf("Wav duration: %i ms", wav_duration)
+	log.Printf("Wav duration: %d ms", wav_duration)
 
 	//save speechapi result in file
 	err = ioutil.WriteFile(audio_tmp, body, 0644)
@@ -192,22 +194,22 @@ func do_audio(texttospeech string) {
 }
 
 func leds_on(P Pumps) {
-	log.Printf("LED - Leds on")
+	log.Print("LED - Leds on")
 	for _, v := range P.Pumps {
 		p, err := rpi.OpenPin(v.Led_pin, rpi.OUT)
 		if err != nil {
-			log.Printf("LED - Can't set LED pin to output")
+			log.Print("LED - Can't set LED pin to output")
 		}
 		p.Write(rpi.HIGH)
 	}
 }
 
 func leds_off (P Pumps) {
-	log.Printf("LED - Leds off")
+	log.Print("LED - Leds off")
 	for _, v := range CurrentPumps.Pumps {
 		p, err := rpi.OpenPin(v.Led_pin, rpi.OUT)
 		if err != nil {
-			log.Printf("LED - Can't set LED pin to output")
+			log.Print("LED - Can't set LED pin to output")
 		}
 		p.Write(rpi.LOW)
 
@@ -217,7 +219,7 @@ func leds_off (P Pumps) {
 func do_led(duration int) {
 	inc := 0
 	i := 0
-	log.Printf("==== LED - Doing led, duration: %i ms ====", duration)
+	log.Printf("==== LED - Doing led, duration: %d ms ====", duration)
 	for i < duration {
 
 		//leds on
@@ -225,7 +227,7 @@ func do_led(duration int) {
 
 		//sleep rand ms
 		inc = rand.Intn(600)
-		log.Printf("LED - Sleep: %i ms", inc)
+		log.Printf("LED - Sleep: %d ms", inc)
 		time.Sleep(time.Millisecond * time.Duration(inc))
 
 		i = i + inc
@@ -235,20 +237,20 @@ func do_led(duration int) {
 
 		//sleep rand ms
 		inc = rand.Intn(300)
-		log.Printf("LED - Sleep: %i ms", inc)
+		log.Printf("LED - Sleep: %d ms", inc)
 		time.Sleep(time.Millisecond * time.Duration(inc))
 
 		i = i + inc
 
 	}
 
-	log.Printf("==== LED - Done ====")
+	log.Print("==== LED - Done ====")
 }
 
 func do_cocktail() {
 	isReadyToDo = false
 	time.Sleep(time.Second * 5)
-	log.Printf("==== Start coocking ====")
+	log.Print("==== Start coocking ====")
 	for _, v := range CurrentPumps.Pumps {
 		log.Printf("Nalivaem %s ;duration = %v; GPIO = %v", v.Name, v.Duration, v.Pump_pin)
 		//pump pin open
@@ -261,9 +263,9 @@ func do_cocktail() {
 		//led pin open
 		l, l_err := rpi.OpenPin(v.Led_pin, rpi.OUT)
 		if l_err != nil {
-			log.Printf("LED - Can't set LED pin to output")
+			log.Print("LED - Can't set LED pin to output")
 		}
-		defer  l.Close()
+		defer l.Close()
 
 		// pump on
 		p.Write(rpi.HIGH)
@@ -279,9 +281,9 @@ func do_cocktail() {
 		//led off
 		l.Write(rpi.LOW)
 	}
-	do_audio("Вот твой коктейль, мешок с мясом")
+	do_audio("Твой коктейль готов!")
 
-	log.Printf("==== Done ====")
+	log.Print("==== Done ====")
 	isReadyToDo = true
 }
 
@@ -302,5 +304,5 @@ func ConfigHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params)
 
 func HomeHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	fmt.Fprint(rw, htmlHeader)
-	fmt.Fprintf(rw, "</head><body><div class=\"container\"><div><a href=\"/do\" class=\"button\">Налить</a></div></div></body></html>")
+	fmt.Fprint(rw, "</head><body><div class=\"container\"><div><a href=\"/do\" class=\"button\">Налить</a></div></div></body></html>")
 }
