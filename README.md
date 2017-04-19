@@ -3,8 +3,8 @@
 Builds with Raspberry Pi and Go. 
 How it works:
 
-<a href="https://www.youtube.com/watch?v=LHpt2am6jXQ
-" target="_blank"><img src="http://img.youtube.com/vi/LHpt2am6jXQ/0.jpg" 
+<a href="https://www.youtube.com/watch?v=8zgrqq7ezRE
+" target="_blank"><img src="http://img.youtube.com/vi/8zgrqq7ezRE/0.jpg" 
 alt="DIY robot barthender" width="240" height="180" border="10" /></a>
 
 # How to build
