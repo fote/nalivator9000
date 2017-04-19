@@ -7,32 +7,34 @@ import (
 	"github.com/Syfaro/telegram-bot-api"
 	"github.com/julienschmidt/httprouter"
 	"github.com/nathan-osman/go-rpigpio"
+	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
-	"net/url"
-	"io/ioutil"
-	"os/exec"
-	"math/rand"
 )
 
-var Port string
-var Address string
-var ConfigFile string
-var CurrentPumps Pumps
-var isReadyToDo bool
-var totalDuration int
-var BotToken string
-var SpeechKitToken string
-var htmlHeader = `<html><head><style>
+var (
+	Port           string
+	Address        string
+	ConfigFile     string
+	CurrentPumps   Pumps
+	isReadyToDo    bool
+	totalDuration  int
+	BotToken       string
+	SpeechKitToken string
+	htmlHeader     = `<html><head><style>
 	* {font-family: Verdana}
 	a.button {font-size: 8em;color: #fff;text-decoration: none;user-select: none;background: rgb(76,175,80);padding: .7em 1.5em;outline: none;font-family: Verdana;}
 	a.button:hover { background: rgb(232,95,76); }
 	a.button:active { background: rgb(152,15,0); }
 	.container {display: flex;align-items: center;justify-content: center;height: 100%;}</style>
 	<title>NALIVATOR-9000</title>`
+)
 
 type Pumps struct {
 	Cname string `json:"cname"`
@@ -51,7 +53,7 @@ func init() {
 	flag.StringVar(&Address, "address", "0.0.0.0", "Listen address")
 	flag.StringVar(&ConfigFile, "config", "config.json", "Config file")
 	flag.StringVar(&BotToken, "bottoken", "", "Telegram bot token")
-	flag.StringVar(&SpeechKitToken, "speechkittoken","","Yandex SpeechKit token. Using Yandex SpeechKit Cloud - https://tech.yandex.ru/speechkit/cloud/")
+	flag.StringVar(&SpeechKitToken, "speechkittoken", "", "Yandex SpeechKit token. Using Yandex SpeechKit Cloud - https://tech.yandex.ru/speechkit/cloud/")
 	flag.Parse()
 
 	file, err := os.Open(ConfigFile)
@@ -78,8 +80,6 @@ func init() {
 	log.Printf("Total duration: %v ms", totalDuration)
 
 	isReadyToDo = true
-
-
 
 }
 
@@ -160,7 +160,6 @@ func main() {
 	r.GET("/do", DoCocktailHandler)
 	r.GET("/", HomeHandler)
 
-
 	log.Print(http.ListenAndServe(Address+":"+Port, r))
 }
 
@@ -169,7 +168,7 @@ func do_audio(texttospeech string) {
 	audio_tmp := "/tmp/audio_tmp.wav"
 	hexurl := url.QueryEscape(texttospeech)
 
-	resp, err := http.Get("https://tts.voicetech.yandex.net/generate?key="+SpeechKitToken+"&format=wav&quality=hi&lang=ru-RU&speaker=ermil&text=" + hexurl)
+	resp, err := http.Get("https://tts.voicetech.yandex.net/generate?key=" + SpeechKitToken + "&format=wav&quality=hi&lang=ru-RU&speaker=ermil&text=" + hexurl)
 	if err != nil {
 		log.Print("Something gone wrong with SpeechAPI")
 	}
@@ -178,8 +177,8 @@ func do_audio(texttospeech string) {
 	body, err := ioutil.ReadAll(resp.Body)
 
 	//calculating duration of wav file
-	log.Printf("Length of api response=%d",len(body))
-	wav_duration := ( ( len(body) / 88000 ) * 1000 ) - 500
+	log.Printf("Length of api response=%d", len(body))
+	wav_duration := ((len(body) / 88000) * 1000) - 500
 	log.Printf("Wav duration: %d ms", wav_duration)
 
 	//save speechapi result in file
@@ -189,7 +188,7 @@ func do_audio(texttospeech string) {
 	go do_led(wav_duration)
 
 	//play speech file
-	out, err := exec.Command("sh","-c","aplay "+audio_tmp).Output()
+	out, err := exec.Command("sh", "-c", "aplay "+audio_tmp).Output()
 	log.Print(out)
 }
 
@@ -204,7 +203,7 @@ func leds_on(P Pumps) {
 	}
 }
 
-func leds_off (P Pumps) {
+func leds_off(P Pumps) {
 	log.Print("LED - Leds off")
 	for _, v := range CurrentPumps.Pumps {
 		p, err := rpi.OpenPin(v.Led_pin, rpi.OUT)
