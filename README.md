@@ -7,6 +7,8 @@ How it works:
 " target="_blank"><img src="http://img.youtube.com/vi/8zgrqq7ezRE/0.jpg" 
 alt="DIY robot bartender" width="240" height="180" border="10" /></a>
 
+About Nalivator (russian) - https://habrahabr.ru/post/327220/
+
 # How to build
 
 1. Install Golang
