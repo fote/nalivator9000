@@ -9,6 +9,18 @@ alt="DIY robot bartender" width="240" height="180" border="10" /></a>
 
 About Nalivator (russian) - https://habrahabr.ru/post/327220/
 
+
+# Scheme
+
+Here is a principial scheme of pump connection.
+
+![Scheme](https://4te.me/img/scheme.png)
+
+* 3,3V - GPIO pin
+* 12V - additional power for pump ([PD-45](https://github.com/fote/nalivator9000/blob/master/docs/psu.pdf))
+* R1=150 Ohm, R2=300 Ohm
+* Transistor - [BDX33B](http://www.farnell.com/datasheets/56743.pdf)
+
 # How to build
 
 1. Install Golang
