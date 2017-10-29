@@ -9,6 +9,8 @@ alt="DIY robot bartender" width="240" height="180" border="10" /></a>
 
 About Nalivator (russian) - https://habrahabr.ru/post/327220/
 
+Speech synthesis - https://speechkit.yandex.com/dev
+
 
 # Scheme
 
